@@ -359,3 +359,21 @@ You can see the diff between the current DB schema and the ghsync schema here:
 ```
 
 </details>
+
+
+
+## Contribute
+
+[Contributions](https://github.com/src-d/metadata-retrieval/issues) are more than welcome. As all source{d} projects, this project follows the
+[source{d} Contributing Guidelines](https://github.com/src-d/guide/blob/master/engineering/documents/CONTRIBUTING.md).
+
+
+## Code of Conduct
+
+All activities under source{d} projects are governed by the
+[source{d} code of conduct](https://github.com/src-d/guide/blob/master/.github/CODE_OF_CONDUCT.md).
+
+
+## License
+
+Apache License Version 2.0, see [LICENSE](LICENSE.md).
