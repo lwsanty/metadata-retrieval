@@ -79,6 +79,20 @@ func NewStdoutDownloader(httpClient *http.Client) (*Downloader, error) {
 	}, nil
 }
 
+func NewMemDownloader(httpClient *http.Client) (*Downloader, error) {
+	// TODO: is the ghsync rate limited client needed?
+
+	t := &retryTransport{httpClient.Transport}
+	httpClient.Transport = t
+
+	return &Downloader{
+		storer: &store.Mem{
+			Repos: make(map[string]map[string]store.Repo),
+		},
+		client: githubv4.NewClient(httpClient),
+	}, nil
+}
+
 // DownloadRepository downloads the metadata for the given repository and all
 // its resources (issues, PRs, comments, reviews)
 func (d Downloader) DownloadRepository(ctx context.Context, owner string, name string, version int) error {
