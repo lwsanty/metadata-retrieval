@@ -17,22 +17,22 @@ type Mem struct {
 }
 
 type Repo struct {
-	RepositoryFields *graphql.RepositoryFields
+	RepositoryFields graphql.RepositoryFields
 	Topics           []string
 	PRs              map[int]PullRequest
 }
 
 type PullRequest struct {
-	PullRequest *graphql.PullRequest
+	PullRequest graphql.PullRequest
 	Assignees   []string
 	Labels      []string
-	Comments    []*graphql.IssueComment
+	Comments    []graphql.IssueComment
 	Reviews     map[int]PullRequestReview
 }
 
 type PullRequestReview struct {
-	PullRequestReview *graphql.PullRequestReview
-	Comments          []*graphql.PullRequestReviewComment
+	PullRequestReview graphql.PullRequestReview
+	Comments          []graphql.PullRequestReviewComment
 }
 
 func (m *Mem) SaveOrganization(organization *graphql.Organization) error {
@@ -46,16 +46,17 @@ func (m *Mem) SaveUser(user *graphql.UserExtended) error {
 }
 
 func (m *Mem) SaveRepository(repository *graphql.RepositoryFields, topics []string) error {
-	fmt.Printf("repository data fetched for %s/%s\n", repository.Owner.Login, repository.Name)
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	fmt.Printf("repository data fetched for %s/%s\n", repository.Owner.Login, repository.Name)
 
 	if _, ok := m.Repos[repository.Owner.Login]; !ok {
 		m.Repos[repository.Owner.Login] = make(map[string]Repo)
 	}
 
 	m.Repos[repository.Owner.Login][repository.Name] = Repo{
-		RepositoryFields: repository,
+		RepositoryFields: *repository,
 		Topics:           topics,
 		PRs:              make(map[int]PullRequest),
 	}
@@ -63,74 +64,80 @@ func (m *Mem) SaveRepository(repository *graphql.RepositoryFields, topics []stri
 }
 
 func (m *Mem) SaveIssue(repositoryOwner, repositoryName string, issue *graphql.Issue, assignees []string, labels []string) error {
-	//fmt.Printf("issue data fetched for #%v %s\n", issue.Number, issue.Title)
+	fmt.Printf("issue data fetched for #%v %s\n", issue.Number, issue.Title)
 	return nil
 }
 
 func (m *Mem) SaveIssueComment(repositoryOwner, repositoryName string, issueNumber int, comment *graphql.IssueComment) error {
-	//fmt.Printf("  issue comment data fetched by %s at %v: %q\n", comment.Author.Login, comment.CreatedAt, trim(comment.Body))
+	fmt.Printf("  issue comment data fetched by %s at %v: %q\n", comment.Author.Login, comment.CreatedAt, trim(comment.Body))
 	return nil
 }
 
 func (m *Mem) SavePullRequest(repositoryOwner, repositoryName string, pr *graphql.PullRequest, assignees []string, labels []string) error {
-	//fmt.Printf("PR data fetched for #%v %s\n", pr.Number, pr.Title)
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	fmt.Printf("PR data fetched for #%v %s\n", pr.Number, pr.Title)
 
 	if _, ok := m.Repos[repositoryOwner][repositoryName]; !ok {
 		return NotFound
 	}
+
 	m.Repos[repositoryOwner][repositoryName].PRs[pr.Number] = PullRequest{
-		PullRequest: pr,
+		PullRequest: *pr,
 		Assignees:   assignees,
 		Labels:      labels,
 		Reviews:     make(map[int]PullRequestReview),
 	}
+
 	return nil
 }
 
 func (m *Mem) SavePullRequestComment(repositoryOwner, repositoryName string, pullRequestNumber int, comment *graphql.IssueComment) error {
-	fmt.Printf("  pr comment data fetched by %s at %v: %q\n", comment.Author.Login, comment.CreatedAt, trim(comment.Body))
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	fmt.Printf("  pr comment data fetched by %s at %v: %q\n", comment.Author.Login, comment.CreatedAt, trim(comment.Body))
 
 	tmpPR, ok := m.Repos[repositoryOwner][repositoryName].PRs[pullRequestNumber]
 	if !ok {
 		return NotFound
 	}
-	tmpPR.Comments = append(tmpPR.Comments, comment)
+	tmpPR.Comments = append(tmpPR.Comments, *comment)
 	m.Repos[repositoryOwner][repositoryName].PRs[pullRequestNumber] = tmpPR
 
 	return nil
 }
 
 func (m *Mem) SavePullRequestReview(repositoryOwner, repositoryName string, pullRequestNumber int, review *graphql.PullRequestReview) error {
-	fmt.Printf("  PR Review data fetched by %s at %v: %q\n", review.Author.Login, review.SubmittedAt, trim(review.Body))
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	fmt.Printf("  PR Review data fetched by %s at %v: %q\n", review.Author.Login, review.SubmittedAt, trim(review.Body))
 
 	tmpPR, ok := m.Repos[repositoryOwner][repositoryName].PRs[pullRequestNumber]
 	if !ok {
 		return NotFound
 	}
 	tmpPR.Reviews[review.DatabaseId] = PullRequestReview{
-		PullRequestReview: review,
+		PullRequestReview: *review,
 	}
 	m.Repos[repositoryOwner][repositoryName].PRs[pullRequestNumber] = tmpPR
 	return nil
 }
 
 func (m *Mem) SavePullRequestReviewComment(repositoryOwner, repositoryName string, pullRequestNumber int, pullRequestReviewId int, comment *graphql.PullRequestReviewComment) error {
-	fmt.Printf("    PR review comment data fetched by %s at %v: %q\n", comment.Author.Login, comment.CreatedAt, trim(comment.Body))
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	fmt.Printf("    PR review comment data fetched by %s at %v: %q\n", comment.Author.Login, comment.CreatedAt, trim(comment.Body))
 
 	tmpReview, ok := m.Repos[repositoryOwner][repositoryName].PRs[pullRequestNumber].Reviews[pullRequestReviewId]
 	if !ok {
 		return NotFound
 	}
 
-	tmpReview.Comments = append(tmpReview.Comments, comment)
+	tmpReview.Comments = append(tmpReview.Comments, *comment)
 	m.Repos[repositoryOwner][repositoryName].PRs[pullRequestNumber].Reviews[pullRequestReviewId] = tmpReview
 
 	return nil
